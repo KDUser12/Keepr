@@ -19,8 +19,18 @@ except ImportError as error:
 logger = logging.getLogger("main")
 
 import yaml
+from pathlib import Path
 
 from __init__ import __version__
+from utils._os import os_compatibility
+
+current_file = Path(__file__).resolve()
+keepr_path_default = current_file.parent
+
+
+def get_keepr_path():
+    global keepr_path_default
+    return keepr_path_default
 
 
 def argparse_setup() -> argparse.Namespace:
@@ -62,14 +72,41 @@ def logging_setup(args: argparse.Namespace) -> logging.Logger:
     return logger
 
 
-def initialize():
-    parser, args = argparse_setup
+def check_compatibility(args: argparse.Namespace, parser: argparse.Namespace):
+    checks = {
+        "os": {
+            "name": "OS", 
+            "function": lambda: os_compatibility()
+        }
+    }
     
-    with open("./configs/logging.yaml" , "r") as file:
+    skipped_checks = args.skip_check or []
+    
+    
+    if "all" in skipped_checks:
+        if skipped_checks and (len(skipped_checks) > 1 or skipped_checks[0] != "all"):
+            parser.error("The 'all' argument must be the first and only choice after '--skip-check'.")
+        return True
+
+    for object, data in checks.items():
+        if object not in skipped_checks:
+            logger.debug(f"Running {data['name']} compatibility check...")
+            data['function']()
+        else:
+            logger.warning(f"Skipping {data['name']} compatibility check.")        
+    
+
+def initialize():
+    parser, args = argparse_setup()
+    keepr_path_default = get_keepr_path()
+    
+    with open(f"{keepr_path_default}/configs/logging.yaml" , "r") as file:
         config_file = yaml.safe_load(file)
         dictConfig(config_file)
     logger = logging_setup(args)
-
+    
+    check_compatibility(args, parser)
+    
 
 def main():
     initialize()
