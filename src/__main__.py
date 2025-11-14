@@ -23,6 +23,7 @@ from pathlib import Path
 
 from __init__ import __version__
 from utils._os import os_compatibility
+from utils.environment import python_compatiblity
 
 current_file = Path(__file__).resolve()
 keepr_path_default = current_file.parent
@@ -77,6 +78,10 @@ def check_compatibility(args: argparse.Namespace, parser: argparse.Namespace):
         "os": {
             "name": "OS", 
             "function": lambda: os_compatibility()
+        },
+        "env": {
+            "name": "environment",
+            "function": lambda: python_compatiblity()
         }
     }
     
