@@ -15,12 +15,12 @@ handlers:
     class: logging.FileHandler
     level: WARNING
     formatter: detailed
-    filename: ./cache/logs/app_diagnostics.log
+    filename: src/cache/logs/app_diagnostics.log
   debug_file:
     class: logging.FileHandler
     level: DEBUG
     formatter: detailed
-    filename: ./cache/logs/debug.log
+    filename: src/cache/logs/debug.log
 
 loggers:
   main:
