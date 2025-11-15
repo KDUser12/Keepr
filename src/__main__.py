@@ -18,16 +18,24 @@ except ImportError as error:
     raise(f"Unable to import the module needed for logging. Check that your Python version is 2.7 or later.\n{error}")
 logger = logging.getLogger("main")
 
-import yaml
 from pathlib import Path
 
 from __init__ import __version__
 from utils._os import os_compatibility
 from utils.environment import python_compatiblity
-from utils.pypixz_lite.install_packages import install_modules
+from utils.pypixz_pro import install_requirements, install_modules
+
+
+try:
+    import yaml
+except ModuleNotFoundError:
+    install_modules(module="pyyaml", logger="main")
+    import yaml
+    
 
 current_file = Path(__file__).resolve()
 keepr_path_default = current_file.parent
+requirements_path_default = f"{current_file.parent.parent}/requirements.txt"
 
 
 def get_keepr_path():
@@ -74,7 +82,22 @@ def logging_setup(args: argparse.Namespace) -> logging.Logger:
     return logger
 
 
-def check_compatibility(args: argparse.Namespace, parser: argparse.Namespace):
+def check_compatibility(args: argparse.Namespace, parser: argparse.Namespace) -> bool:
+    """check_compatibility Checks the compatibility of the execution environment based on the provided command-line options.
+
+    This function runs a series of checks (operating system, Python environment, required packages) unless pecific checks have been explicitly excluded using 
+    the `--skip-check` argument.
+    The order and logic of all checks are defined in an internal dictionary, allowing centralized and maintainable control over compatibility tests.
+
+    Arguments:
+        args {argparse.Namespace} -- The parsed command line arguments.
+        parser {argparse.Namespace} -- The parser instance used to raise argument-related errors, especially when invalid values are passed to `--skip-check`.
+
+    Returns:
+        bool -- Returns True only when the user explicitly passes `--skip-check all`, meaning that no compatibility checks are executed. 
+                Otherwise, the function returns True and simply runs the required checks.
+    """
+    
     checks = {
         "os": {
             "name": "OS", 
@@ -86,7 +109,7 @@ def check_compatibility(args: argparse.Namespace, parser: argparse.Namespace):
         },
         "packages": {
             "name": "package",
-            "function": lambda: install_modules()
+            "function": lambda: install_requirements(requirements_path_default, "main")
         }
     }
     
@@ -103,7 +126,8 @@ def check_compatibility(args: argparse.Namespace, parser: argparse.Namespace):
             logger.debug(f"Running {data['name']} compatibility check...")
             data['function']()
         else:
-            logger.warning(f"Skipping {data['name']} compatibility check.")        
+            logger.warning(f"Skipping {data['name']} compatibility check.")
+    return True
     
 
 def initialize():
